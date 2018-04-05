@@ -3,6 +3,11 @@ import tkinter.ttk as ttk
 import serial as ser
 
 
+srl = ser.Serial('COM3', 9600)
+print(srl.name)
+srl.write('abc')
+srl.close()
+
 window = Tk()
 window.title("SCARA GUI")
 window.geometry("500x350")
