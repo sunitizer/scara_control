@@ -1,37 +1,52 @@
 from tkinter import *
 import tkinter.ttk as ttk
 import serial as ser
+import serial.tools.list_ports
 
 
-srl = ser.Serial('COM3', 9600)
-print(srl.name)
-srl.write('abc')
-srl.close()
+ports = serial.tools.list_ports.comports()
+portlist = ['']
+for p in ports:
+    print(p.device)
+    portlist.append(str(p.device))
+#arduinoSrl = ser.Serial('COM3', 9600)
+
 
 window = Tk()
 window.title("SCARA GUI")
-window.geometry("500x350")
+#window.geometry("350x250")
+
+serFrame = Frame(window)
+serFrame.pack(side=TOP)
 
 
-def clicked():
-    res = "My name is " + txt.get() + combo.get()
-    label.configure(text=res)
+
+def clickedConnectSrl():
+    arduinoSrl = ser.Serial(combo.get(), 9600)
+    lbl_PortConnect.configure(text="Connected to " + combo.get())
 
 
-label = Label(window, text="Hello World!!", font=("Arial", 12))
-label.grid(column=0, row=0)
+lbl_Srl = Label(serFrame, text="Serial Port:", font=("Arial", 8))
+lbl_Srl.grid(column=0, row=0)
 
-btn = Button(window, text="Click Me", command=clicked, font=("Comic Sans MS", 11), bg='blue', fg='red')
-btn.grid(column=1, row=0)
+combo = ttk.Combobox(serFrame, values=portlist)
+combo.current(0)
+combo.grid(column=1, row=0)
+
+btn = Button(serFrame, text="Connect", command=clickedConnectSrl, font=("Arial", 8))
+btn.grid(column=2, row=0)
+
+lbl_PortConnect = Label(serFrame, font=("Arial", 8))
+lbl_PortConnect.grid(columnspan=3)
+#lbl_PortConnect.grid(column=0, row=1)
+
 
 txt = Entry(window, width=10)
-txt.grid(column=0, row=1)
+txt.pack()
+#txt.grid(column=0, row=2)
 txt.focus()
 
-combo = ttk.Combobox(window)
-combo['values'] = (1, 2, 3, 4, 5, "Text")
-combo.current(1)
-combo.grid(column=0, row=2)
+
 
 
 window.mainloop()

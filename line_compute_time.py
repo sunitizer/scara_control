@@ -52,6 +52,7 @@ def line_compute_times(pos_start, pos_end, speed):
     step_arrays = [[], []]
     direction = [[], []]
 
+    # will check if the motor will run in opposite direction, if so will adjust graph and find point of dir change
     maxmin_index = [check_for_max_min(angles_arrays[0]), check_for_max_min(angles_arrays[1])]
     if maxmin_index[0] is not None:
 
@@ -101,6 +102,7 @@ def line_compute_times(pos_start, pos_end, speed):
         direction[1].append(motor_dir(angles_arrays[1][0], angles_arrays[1][-1]))
         direction[1].append(None)
 
+    # fits polynomial to the graphs
     quad_coef = [np.polyfit(step_arrays[0], time_array, 3), np.polyfit(step_arrays[1], time_array, 3)]
     plot_fit(step_arrays[0], time_array, quad_coef[0])
     plot_fit(step_arrays[1], time_array, quad_coef[1])
@@ -155,13 +157,12 @@ def distance_two_points(point1, point2):
 
 
 def plot_fit(x_array, y_array, coef):
-
+    """plots the x and y array and also the polynomial of 3rd order using the coefficients"""
     size = int(x_array[-1])
     x1 = range(0, size)
     y = []
     for x in x1:
         y.append(coef[0]*x**3+coef[1]*x**2+coef[2]*x**1+coef[3])
-    #    y.append(coef[0]*x**7+coef[1]*x**6+coef[2]*x**5+coef[3]*x**4+coef[4]*x**3+coef[5]*x**2+coef[6]*x**1+coef[7])
 
     print(x1)
     plt.plot(x_array, y_array, 'bo', x1, y, 'r--')
@@ -169,6 +170,7 @@ def plot_fit(x_array, y_array, coef):
 
 
 def check_for_max_min(angle_array):
+    """checks for global max or min and returns the array index at that point"""
     maxmin_index = None
     for index in range(1, len(angle_array)-1):
         if angle_array[index] >= angle_array[index-1] and angle_array[index] >= angle_array[index+1]:
@@ -181,6 +183,7 @@ def check_for_max_min(angle_array):
 
 
 def motor_dir(angle_start, angle_end):
+    """ returns True for positive direction theta and False for negative direction"""
     if angle_end > angle_start:
         direction = True
     else:
