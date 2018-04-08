@@ -192,8 +192,9 @@ def motor_dir(angle_start, angle_end):
 
 
 #testing
-pos1 = [250, 50]
-pos2 = [-5, 200]
+#pos1 = [250, 50]
+#pos2 = [-5, 200]
 
-coef1 = line_compute_times(pos1, pos2, 20)
-print(coef1)
+
+#coef1 = line_compute_times(pos1, pos2, 20)
+#print(coef1)
