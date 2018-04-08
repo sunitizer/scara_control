@@ -144,11 +144,23 @@ class ScaraPathCalculator(object):
 
     def plot_fit(self, x_array, y_array, coef):
         """plots the x and y array and also the polynomial of 3rd order using the coefficients"""
-        size = int(x_array[-1])
+        """size = int(x_array[-1])
         x1 = np.arange(size)
         y = coef[0]*x1**3+coef[1]*x1**2+coef[2]*x1**1+coef[3]
         
-        # print(x1)
+        print(y)
+        plt.plot(x_array, y_array, 'bo', x1, y, 'r--')
+        plt.show()"""
+
+        """plots the x and y array and also the polynomial of 3rd order using the coefficients"""
+        size = int(x_array[-1])
+        x1 = range(0, size)
+        y = []
+        for x in x1:
+            y.append(coef[0] * x ** 3 + coef[1] * x ** 2 + coef[2] * x ** 1 + coef[3])
+
+        print(x1)
+        print(y)
         plt.plot(x_array, y_array, 'bo', x1, y, 'r--')
         plt.show()
 
