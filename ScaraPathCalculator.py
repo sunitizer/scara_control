@@ -70,6 +70,7 @@ class ScaraPathCalculator(object):
         # Initialize 1D lists, can append lists each iteration through the loop if needed
         step_arrays = []
         direction = []
+        ##
 
         # Uses theta1_t, self.ANGLE_RES1 first time through loop
         # Uses theta2_t, self.ANGLE_RES2 second time through loop

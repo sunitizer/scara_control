@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="3243f8e2-d788-4f13-9594-eedb1cd1c255" name="Default" comment="" />
+    <list default="true" id="3243f8e2-d788-4f13-9594-eedb1cd1c255" name="Default" comment="">
+      <change beforePath="$PROJECT_DIR$/ScaraPathCalculator.py" beforeDir="false" afterPath="$PROJECT_DIR$/ScaraPathCalculator.py" afterDir="false" />
+    </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -35,8 +37,8 @@
       <file leaf-file-name="ScaraPathCalculator.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/ScaraPathCalculator.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="17">
-              <caret line="71" column="22" lean-forward="true" selection-start-line="71" selection-start-column="22" selection-end-line="71" selection-end-column="22" />
+            <state relative-caret-position="34">
+              <caret line="72" column="10" selection-start-line="72" selection-start-column="10" selection-end-line="72" selection-end-column="10" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -337,8 +339,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/ScaraPathCalculator.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="17">
-          <caret line="71" column="22" lean-forward="true" selection-start-line="71" selection-start-column="22" selection-end-line="71" selection-end-column="22" />
+        <state relative-caret-position="34">
+          <caret line="72" column="10" selection-start-line="72" selection-start-column="10" selection-end-line="72" selection-end-column="10" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>
