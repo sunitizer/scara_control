@@ -15,8 +15,8 @@ def main():
                                           angle_res2=2*math.pi/400/2/8)
     
     coef1 = path_calculator.line_compute_times(pos1, pos2, speed)
-    print("Time elapsed: {}".format(time.time()-start_time))
-    print(coef1)
+    #print("Time elapsed: {}".format(time.time()-start_time))
+    #print(coef1)
     
 class ScaraPathCalculator(object):
     """ Class for managing compution of scara arm coefficients
@@ -80,17 +80,12 @@ class ScaraPathCalculator(object):
             maxmin_index = self.check_for_max_min(angles)
             if maxmin_index is not None:
                 turning_angle = angles[maxmin_index]
-                split_angles_arrays = [angles[:maxmin_index + 1], angles[maxmin_index:]-turning_angle]
-
-                # convert angles array to steps array
-                split_step_arrays = [self.angle_to_steps(arr, res) for arr in split_angles_arrays]
-                # print(split_step_arrays[0][1])
-                turning_step = split_step_arrays[0][-1]
-                split_step_arrays[1] += turning_step
+                turning_step = (turning_angle - angles[0]) / res
+                split_step_arrays = [self.angle_to_steps(angles[:maxmin_index], res),
+                                     self.angle_to_steps(angles[maxmin_index:], res) + turning_step]
 
                 # Use hstack to concatenate numpy ndarrays, equivalent of adding lists
-                step_arrays.append(np.hstack([split_step_arrays[0], split_step_arrays[1][1:]]))
-
+                step_arrays.append(np.hstack([split_step_arrays[0], split_step_arrays[1]]))
                 direction.append([self.motor_dir(angles[0], angles[maxmin_index]), maxmin_index])
             else:
                 step_arrays.append(self.angle_to_steps(angles, res))
@@ -159,8 +154,6 @@ class ScaraPathCalculator(object):
         for x in x1:
             y.append(coef[0] * x ** 3 + coef[1] * x ** 2 + coef[2] * x ** 1 + coef[3])
 
-        print(x1)
-        print(y)
         plt.plot(x_array, y_array, 'bo', x1, y, 'r--')
         plt.show()
 

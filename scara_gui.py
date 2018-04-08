@@ -169,3 +169,4 @@ scaramotor1 = ScaraMotors(angle_in)
 serial1 = SerialConnection(window)
 pointtopoint = PointtoPoint(window,scaramotor1, serial1)
 window.mainloop()
+
