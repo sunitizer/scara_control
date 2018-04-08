@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+import time
 
 # length of each arm
 ARM_LEN1 = 179.9
@@ -65,7 +66,7 @@ def line_compute_times(pos_start, pos_end, speed):
         split_step_arrays[0] = angle_to_steps(split_angles_arrays[0], ANGLE_RES1)
         split_step_arrays[1] = angle_to_steps(split_angles_arrays[1], ANGLE_RES1)
 
-        print(split_step_arrays[0][1])
+        # print(split_step_arrays[0][1])
         split_step_arrays[1] = [split_step_arrays[0][-1] + shift_step for shift_step in
                                    split_step_arrays[1]]
 
@@ -89,7 +90,7 @@ def line_compute_times(pos_start, pos_end, speed):
         split_step_arrays[0] = angle_to_steps(split_angles_arrays[0], ANGLE_RES2)
         split_step_arrays[1] = angle_to_steps(split_angles_arrays[1], ANGLE_RES2)
 
-        print(split_step_arrays[0][1])
+        # print(split_step_arrays[0][1])
         split_step_arrays[1] = [split_step_arrays[0][-1] + shift_step for shift_step in
                                 split_step_arrays[1]]
 
@@ -164,7 +165,7 @@ def plot_fit(x_array, y_array, coef):
     for x in x1:
         y.append(coef[0]*x**3+coef[1]*x**2+coef[2]*x**1+coef[3])
 
-    print(x1)
+    # print(x1)
     plt.plot(x_array, y_array, 'bo', x1, y, 'r--')
     plt.show()
 
@@ -178,7 +179,7 @@ def check_for_max_min(angle_array):
         elif angle_array[index] <= angle_array[index-1] and angle_array[index] <= angle_array[index+1]:
             maxmin_index = index
 
-    print(maxmin_index)
+    # print(maxmin_index)
     return maxmin_index
 
 
@@ -190,11 +191,10 @@ def motor_dir(angle_start, angle_end):
         direction = False
     return direction
 
-
+start_time = time.time()
 #testing
-#pos1 = [250, 50]
-#pos2 = [-5, 200]
-
-
-#coef1 = line_compute_times(pos1, pos2, 20)
-#print(coef1)
+pos1 = [250, 50]
+pos2 = [-5, 200]
+coef1 = line_compute_times(pos1, pos2, 20)
+print("Time elapsed: {}".format(time.time()-start_time))
+print(coef1)
