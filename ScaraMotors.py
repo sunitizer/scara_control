@@ -4,26 +4,10 @@ import math
 import time
 
 
-def main():
-    start_time = time.time()
-    #testing
-    pos1 = [250, 50]
-    pos2 = [-5, 200]
-    speed = 20 #mm/s
-    path_calculator = ScaraPathCalculator(arm_len1=179.9,
-                                          arm_len2=150,
-                                          angle_res1=2*math.pi/200/3.70588235/8,
-                                          angle_res2=2*math.pi/400/2/8)
-    
-    coef1 = path_calculator.line_compute_times(pos1, pos2, speed)
-    #print("Time elapsed: {}".format(time.time()-start_time))
-    #print(coef1)
+class ScaraMotors:
+    """Class that is everything related to the physical robotic arm"""
 
-
-class ScaraPathCalculator(object):
-    """ Class for managing compution of scara arm coefficients
-    """
-    def __init__(self, arm_len1, arm_len2, angle_res1, angle_res2):
+    def __init__(self, arm_len1, arm_len2, angle_res1, angle_res2, angle_init):
         # length of each arm
         self.ARM_LEN1 = arm_len1
         self.ARM_LEN2 = arm_len2
@@ -31,6 +15,9 @@ class ScaraPathCalculator(object):
         # the angle each motor rotates per step
         self.ANGLE_RES1 = angle_res1
         self.ANGLE_RES2 = angle_res2
+
+        # the current angles of the scara arm
+        self.angle_cur = angle_init
 
     def line_compute_times(self, pos_start, pos_end, speed, time_res=0.001):
         """
@@ -55,17 +42,19 @@ class ScaraPathCalculator(object):
         total_time = disc_dist / speed
 
         # define time array of 0 to 1 in time_res increments
-        time_array = np.linspace(0, 1, 1/time_res+1)
+        time_array = np.linspace(0, 1, 1 / time_res + 1)
 
         # solve for angles array for both motors given time_array
         # Index time_array backwards with [::-1] to achieve same thing as 1-time
-        x_t = time_array[::-1]*disc_pos_start[0] + time_array*disc_pos_end[0]
+        x_t = time_array[::-1] * disc_pos_start[0] + time_array * disc_pos_end[0]
         # Automatic vectorized calculation of y_t, since x_t is an np.ndarray
-        y_t = m*x_t + b
+        y_t = m * x_t + b
         # Use numpy versions of trig functions so that everything is vectorized
-        theta2_t = np.arccos((x_t**2 + y_t**2 - self.ARM_LEN1**2 - self.ARM_LEN2**2) / (2*self.ARM_LEN1*self.ARM_LEN2)) 
-        theta1_t = (np.arctan2(y_t, x_t) + np.arctan2((self.ARM_LEN2*np.sin(theta2_t)), (self.ARM_LEN1 + self.ARM_LEN2*np.cos(theta2_t))))
-        
+        theta2_t = np.arccos(
+            (x_t ** 2 + y_t ** 2 - self.ARM_LEN1 ** 2 - self.ARM_LEN2 ** 2) / (2 * self.ARM_LEN1 * self.ARM_LEN2))
+        theta1_t = (np.arctan2(y_t, x_t) + np.arctan2((self.ARM_LEN2 * np.sin(theta2_t)),
+                                                      (self.ARM_LEN1 + self.ARM_LEN2 * np.cos(theta2_t))))
+
         # convert time to right time
         time_array *= total_time
 
@@ -101,13 +90,13 @@ class ScaraPathCalculator(object):
         num_steps = [round(arr[-1]) for arr in step_arrays]
 
         return [quad_coef[0], quad_coef[1], num_steps, direction]
-        #return [quad_coef[0][0], quad_coef[0][1], quad_coef[0][2], quad_coef[1][0], quad_coef[1][1], quad_coef[1][2], num_steps[0], num_steps[1], direction]
+        # return [quad_coef[0][0], quad_coef[0][1], quad_coef[0][2], quad_coef[1][0], quad_coef[1][1], quad_coef[1][2], num_steps[0], num_steps[1], direction]
 
     def find_discrete_angle(self, pos_start):
         """find discretized angle of given start_position based on ANGLE_RES of both motors"""
         actual_angle = self.find_angles(pos_start)
-        float_steps = [round(actual_angle[0]/self.ANGLE_RES1), round(actual_angle[1]/self.ANGLE_RES2)]
-        discrete_angle = [float_steps[0]*self.ANGLE_RES1, float_steps[1]*self.ANGLE_RES2]
+        float_steps = [round(actual_angle[0] / self.ANGLE_RES1), round(actual_angle[1] / self.ANGLE_RES2)]
+        discrete_angle = [float_steps[0] * self.ANGLE_RES1, float_steps[1] * self.ANGLE_RES2]
 
         return discrete_angle
 
@@ -115,9 +104,11 @@ class ScaraPathCalculator(object):
         """find angle of motors 1 and 2 in radian given position using inverse kinematics"""
         exact_angle = [0, 0]
 
-        exact_angle[1] = math.acos((pos[0]**2 + pos[1]**2 - self.ARM_LEN1**2 - self.ARM_LEN2**2) / (2*self.ARM_LEN1*self.ARM_LEN2))
+        exact_angle[1] = math.acos(
+            (pos[0] ** 2 + pos[1] ** 2 - self.ARM_LEN1 ** 2 - self.ARM_LEN2 ** 2) / (2 * self.ARM_LEN1 * self.ARM_LEN2))
         exact_angle[0] = (math.atan2(pos[1], pos[0])
-                        + math.atan2(self.ARM_LEN2*math.sin(exact_angle[1]), self.ARM_LEN1+self.ARM_LEN2*math.cos(exact_angle[1])))
+                          + math.atan2(self.ARM_LEN2 * math.sin(exact_angle[1]),
+                                       self.ARM_LEN1 + self.ARM_LEN2 * math.cos(exact_angle[1])))
         return exact_angle
 
     def find_pos(self, angle):
@@ -126,25 +117,26 @@ class ScaraPathCalculator(object):
                self.ARM_LEN1 * math.sin(angle[0]) + self.ARM_LEN2 * math.sin(angle[0] - angle[1])]
         return pos
 
-
     def angle_to_steps(self, angle_array, resolution):
         """takes the initial angle and final angle and resolution per step and returns the steps in a np.ndarray"""
         initial = angle_array[0]
-        return np.abs(angle_array-initial)/resolution
-    
+        return np.abs(angle_array - initial) / resolution
+
+    def steps_to_go(self, angle_in, angle_fin, reso):
+        """ finds number of steps needed to go from one angle to another (singular)"""
+        return int(abs(angle_fin-angle_in)//reso)
 
     def distance_two_points(self, point1, point2):
         """Find the distance between two points"""
-        distance = math.sqrt((point2[0]-point1[0])**2 + (point2[1]-point1[1])**2)
+        distance = math.sqrt((point2[0] - point1[0]) ** 2 + (point2[1] - point1[1]) ** 2)
         return distance
-
 
     def plot_fit(self, x_array, y_array, coef):
         """plots the x and y array and also the polynomial of 3rd order using the coefficients"""
         """size = int(x_array[-1])
         x1 = np.arange(size)
         y = coef[0]*x1**3+coef[1]*x1**2+coef[2]*x1**1+coef[3]
-        
+
         print(y)
         plt.plot(x_array, y_array, 'bo', x1, y, 'r--')
         plt.show()"""
@@ -159,7 +151,6 @@ class ScaraPathCalculator(object):
         plt.plot(x_array, y_array, 'bo', x1, y, 'r--')
         plt.show()
 
-
     def check_for_max_min(self, angle_array):
         """Checks for global max or min and returns the array index at that point,
         or None if angle_array is monotonic
@@ -167,18 +158,28 @@ class ScaraPathCalculator(object):
         argmax = np.argmax(angle_array)
         argmin = np.argmin(angle_array)
         array_len = len(angle_array)
-        if argmax != 0 and argmax != array_len-1:
+        if argmax != 0 and argmax != array_len - 1:
             return argmax
-        elif argmin != 0 and argmin != array_len-1:
+        elif argmin != 0 and argmin != array_len - 1:
             return argmin
         else:
             return None
-
 
     def motor_dir(self, angle_start, angle_end):
         """ returns True for positive direction theta and False for negative direction"""
         return angle_end > angle_start
 
+    def updateAngle(self, angle_updated):
+        self.angle_cur = angle_updated
 
-if __name__ == "__main__":
-    main()
+    def getAngle(self):
+        return self.angle_cur
+
+    def getReso(self):
+        return [self.ANGLE_RES1, self.ANGLE_RES2]
+
+    def steps_to_angle(self, steps, dir, reso):
+        if dir:
+            return steps*reso
+        else:
+            return -steps*reso
