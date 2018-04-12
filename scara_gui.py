@@ -45,10 +45,50 @@ class SerialConnection:
             self.btn_connect.configure(text="Connect")
             self.lbl_PortConnect.configure(text="Disconnected")
 
-    def serial_write_point(self, pos):
-        self.arduinosrl.write(struct.pack('>B', 0b11111111))
-        self.arduinosrl.write(struct.pack('>B', 0b11110000))
+    def serial_send_steps_dir(self, steps, direc):
+        offset_array = [0, 0, 0, 0]
+        motor1_msb, motor1_lsb = self.convert_to_bytes(steps[0])
+        motor2_msb, motor2_lsb = self.convert_to_bytes(steps[1])
+        motor1_msb, offset_array[0] = self.is_xff(motor1_msb)
+        motor1_lsb, offset_array[1] = self.is_xff(motor1_lsb)
+        motor2_msb, offset_array[2] = self.is_xff(motor2_msb)
+        motor2_lsb, offset_array[3] = self.is_xff(motor2_lsb)
+        off_byte = self.make_offset_byte(offset_array)
+        dir_byte = self.make_offset_byte(direc)
 
+        # send 7 bytes to ardiuno: 255, direction_byte, offset_byte, motor1_msb, motor1_lsb, motor2_msb, motor2_lsb
+        self.send_start_byte()
+        self.arduinosrl.write(dir_byte)
+        self.arduinosrl.write(off_byte)
+        self.arduinosrl.write(motor1_msb)
+        self.arduinosrl.write(motor1_lsb)
+        self.arduinosrl.write(motor2_msb)
+        self.arduinosrl.write(motor2_lsb)
+
+    def send_start_byte(self):
+        self.arduinosrl.write(struct.pack('>B', 0b11111111))
+
+    def convert_to_bytes(self, number):
+        msb = struct.pack('>B', number >> 8)
+        lsb = struct.pack('>B', number & 0b11111111)
+
+        return msb, lsb
+
+    def is_xff(self, byte):
+        offset = 0
+        if byte == struct.pack('>B', 0b11111111):
+            byte = struct.pack('>B', 0b11111110)
+            offset = 1
+        return byte, offset
+
+    def make_offset_byte(self, offset_array):
+        byte = 0
+        for ind in range(len(offset_array)):
+            if offset_array[ind] == 1:
+                byte = (1 | byte)
+            if ind != len(offset_array)-1:
+                byte = byte << 1
+        return struct.pack('>B', byte)
 
 
 class PointtoPoint:
@@ -101,6 +141,8 @@ class PointtoPoint:
             self.lbl_coordmes.configure(text=str(pos))
             try:
                 angle = scaramotor.find_angles(pos)
+                self.ent_angle_1.delete(0, END)
+                self.ent_angle_2.delete(0, END)
                 self.ent_angle_1.insert(0, str(angle[0]))
                 self.ent_angle_2.insert(0, str(angle[1]))
             except ValueError:
@@ -119,9 +161,12 @@ class PointtoPoint:
             scaramotor.updateAngle(
                 [current_angles[0] + scaramotor.steps_to_angle(steps[0], direc[0], scaramotor.getReso()[0]),
                  current_angles[1] + scaramotor.steps_to_angle(steps[1], direc[1], scaramotor.getReso()[1])])
+            serial1.serial_send_steps_dir(steps, direc)
         except ValueError:
             print("ErrorAngle")
-        print(scaramotor.getAngle())
+
+        #print(scaramotor.getAngle())
+        #print(steps, direc)
 
     def __is_float(self, num):
         try:
