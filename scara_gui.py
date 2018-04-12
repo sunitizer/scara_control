@@ -165,8 +165,6 @@ class PointtoPoint:
         except ValueError:
             print("ErrorAngle")
 
-        #print(scaramotor.getAngle())
-        #print(steps, direc)
 
     def __is_float(self, num):
         try:
@@ -176,6 +174,53 @@ class PointtoPoint:
             return False
 
 
+class LineInput:
+
+
+    def __init__(self, master, scaramotor, serial1):
+        frame_line = Frame(master)
+        frame_line.grid(column=0, row=2, columnspan=2)
+
+        self.lbl_x1 = Label(frame_line, text="X1 (mm): ", font=("Arial", 8))
+        self.lbl_x1.grid(column=0, row=0, sticky=W)
+
+        self.ent_x1 = Entry(frame_line, width=5)
+        self.ent_x1.grid(column=1, row=0, sticky=W)
+
+        self.lbl_y1 = Label(frame_line, text="Y1 (mm): ", font=("Arial", 8))
+        self.lbl_y1.grid(column=0, row=1, sticky=W)
+
+        self.ent_y1 = Entry(frame_line, width=5)
+        self.ent_y1.grid(column=1, row=1, sticky=W)
+
+        self.lbl_x2 = Label(frame_line, text="X2 (mm): ", font=("Arial", 8))
+        self.lbl_x2.grid(column=2, row=0)
+
+        self.ent_x2 = Entry(frame_line, width=5)
+        self.ent_x2.grid(column=3, row=0)
+
+        self.lbl_y2 = Label(frame_line, text="Y2 (mm): ", font=("Arial", 8))
+        self.lbl_y2.grid(column=2, row=1)
+
+        self.ent_y2 = Entry(frame_line, width=5)
+        self.ent_y2.grid(column=3, row=1)
+
+        self.lbl_speed = Label(frame_line, text="Speed (mm/s):", font=("Arial", 8))
+        self.lbl_speed.grid(column=4, row=0)
+
+        self.ent_speed = Entry(frame_line, width=10)
+        self.ent_speed.grid(column=5, row=0)
+
+        self.btn_send_linecmd = Button(frame_line, text="  Send  ", command=lambda: self.clickedSendLine(scaramotor),
+                                     font=("Arial", 8))
+        self.btn_send_linecmd.grid(column=6, row=0, rowspan=2, sticky=N+S+E)
+
+    def clickedSendLine(self, scaramotor):
+        pass
+
+
+
+
 window = Tk()
 window.title("SCARA GUI")
 #window.geometry("350x250")
@@ -183,6 +228,7 @@ angle_in = [0,0]
 scaramotor1 = ScaraMotors.ScaraMotors(arm_len1=179.9, arm_len2=150, angle_res1=2*math.pi/200/3.70588235/8,
                           angle_res2=2*math.pi/400/2/8, angle_init=angle_in)
 serial1 = SerialConnection(window)
-pointtopoint = PointtoPoint(window,scaramotor1, serial1)
+pointtopoint = PointtoPoint(window, scaramotor1, serial1)
+straight_line = LineInput(window, scaramotor1, serial1)
 window.mainloop()
 
