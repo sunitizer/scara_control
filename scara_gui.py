@@ -47,7 +47,7 @@ class SerialConnection:
             self.lbl_PortConnect.configure(text="Disconnected")
 
     def send_floats_serial(self, float_num):
-        serial_float = struct.pack('f', np.hstack(float_num))
+        serial_float = struct.pack('ffff', float_num[0], float_num[1], float_num[2], float_num[3])
         try:
             self.arduinosrl.write(serial_float)
         except IOError as e:
@@ -265,8 +265,8 @@ class LineInput:
 
     def clickedSendLine(self):
         steps = [int(self.line_solution[2][0]), int(self.line_solution[2][1])]
-        direc = [self.line_solution[3][0], self.line_solution[4][0]]
-        turn_values = [self.line_solution[3][1], self.line_solution[4][1]]
+        direc = [self.line_solution[3][0][0], self.line_solution[3][1][0]]
+        turn_values = [self.line_solution[3][0][1], self.line_solution[3][1][1]]
 
         serial1.send_start_byte_line()
         #16 bytes

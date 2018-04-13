@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 import time
+import struct
 
 
 def main():
@@ -16,6 +17,7 @@ def main():
                                           angle_res2=2*math.pi/400/2/8)
     
     coef1 = path_calculator.line_compute_times(pos1, pos2, speed)
+    #print(struct.pack('ffff', coef1[0][i], for i in range(4)))
     #print("Time elapsed: {}".format(time.time()-start_time))
     #print(coef1)
 
@@ -95,8 +97,8 @@ class ScaraPathCalculator(object):
 
         # fits polynomial to the graphs
         quad_coef = [np.polyfit(step_arrays[0], time_array, 3), np.polyfit(step_arrays[1], time_array, 3)]
-        self.plot_fit(step_arrays[0], time_array, quad_coef[0])
-        self.plot_fit(step_arrays[1], time_array, quad_coef[1])
+        #self.plot_fit(step_arrays[0], time_array, quad_coef[0])
+        #self.plot_fit(step_arrays[1], time_array, quad_coef[1])
 
         num_steps = [round(arr[-1]) for arr in step_arrays]
 
