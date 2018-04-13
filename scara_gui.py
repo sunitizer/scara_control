@@ -5,6 +5,7 @@ import serial.tools.list_ports
 import math
 import struct
 import ScaraMotors
+import numpy as np
 
 class SerialConnection:
 
@@ -45,7 +46,14 @@ class SerialConnection:
             self.btn_connect.configure(text="Connect")
             self.lbl_PortConnect.configure(text="Disconnected")
 
-    def serial_send_steps_dir(self, steps, direc):
+    def send_floats_serial(self, float_num):
+        serial_float = struct.pack('f', np.hstack(float_num))
+        try:
+            self.arduinosrl.write(serial_float)
+        except IOError as e:
+            print("I/O error({0}): {1}".format(e.errno, e.strerror))
+
+    def serial_send_steps_dir_woffset(self, steps, direc):
         offset_array = [0, 0, 0, 0]
         motor1_msb, motor1_lsb = self.convert_to_bytes(steps[0])
         motor2_msb, motor2_lsb = self.convert_to_bytes(steps[1])
@@ -57,7 +65,7 @@ class SerialConnection:
         dir_byte = self.make_offset_byte(direc)
 
         # send 7 bytes to ardiuno: 255, direction_byte, offset_byte, motor1_msb, motor1_lsb, motor2_msb, motor2_lsb
-        self.send_start_byte()
+        #self.send_start_byte()
         self.arduinosrl.write(dir_byte)
         self.arduinosrl.write(off_byte)
         self.arduinosrl.write(motor1_msb)
@@ -65,8 +73,33 @@ class SerialConnection:
         self.arduinosrl.write(motor2_msb)
         self.arduinosrl.write(motor2_lsb)
 
+    def serial_send_steps_dir(self, steps, direc):
+        motor1_msb, motor1_lsb = self.convert_to_bytes(steps[0])
+        motor2_msb, motor2_lsb = self.convert_to_bytes(steps[1])
+        dir_byte = self.make_offset_byte(direc)
+
+        # send 5 bytes to ardiuno:  direction_byte, motor1_msb, motor1_lsb, motor2_msb, motor2_lsb
+        self.arduinosrl.write(dir_byte)
+        self.arduinosrl.write(motor1_msb)
+        self.arduinosrl.write(motor1_lsb)
+        self.arduinosrl.write(motor2_msb)
+        self.arduinosrl.write(motor2_lsb)
+
+    def serial_send_two_int(self, array):
+        int1_msb, int1_lsb = self.convert_to_bytes(array[0])
+        int2_msb, int2_lsb = self.convert_to_bytes(array[1])
+
+        # send 4 bytes to ardiuno:  int1_msb, int1_lsb, int2_msb, int2_lsb
+        self.arduinosrl.write(int1_msb)
+        self.arduinosrl.write(int1_lsb)
+        self.arduinosrl.write(int2_msb)
+        self.arduinosrl.write(int2_lsb)
+
     def send_start_byte(self):
         self.arduinosrl.write(struct.pack('>B', 0b11111111))
+
+    def send_start_byte_line(self):
+        self.arduinosrl.write(struct.pack('>B', 0b11111110))
 
     def convert_to_bytes(self, number):
         msb = struct.pack('>B', number >> 8)
@@ -161,7 +194,8 @@ class PointtoPoint:
             scaramotor.updateAngle(
                 [current_angles[0] + scaramotor.steps_to_angle(steps[0], direc[0], scaramotor.getReso()[0]),
                  current_angles[1] + scaramotor.steps_to_angle(steps[1], direc[1], scaramotor.getReso()[1])])
-            serial1.serial_send_steps_dir(steps, direc)
+            serial1.send_start_byte()
+            serial1.serial_send_steps_dir_woffset(steps, direc)
         except ValueError:
             print("ErrorAngle")
 
@@ -178,6 +212,8 @@ class LineInput:
 
 
     def __init__(self, master, scaramotor, serial1):
+        self.line_solution = None
+
         frame_line = Frame(master)
         frame_line.grid(column=0, row=2, columnspan=2)
 
@@ -211,12 +247,38 @@ class LineInput:
         self.ent_speed = Entry(frame_line, width=10)
         self.ent_speed.grid(column=5, row=0)
 
-        self.btn_send_linecmd = Button(frame_line, text="  Send  ", command=lambda: self.clickedSendLine(scaramotor),
+        self.btn_comp_line = Button(frame_line, text="  Compute  ", command=lambda: self.clickedCompLine(scaramotor),
                                      font=("Arial", 8))
-        self.btn_send_linecmd.grid(column=6, row=0, rowspan=2, sticky=N+S+E)
+        self.btn_comp_line.grid(column=6, row=0, sticky=N+S+E)
 
-    def clickedSendLine(self, scaramotor):
-        pass
+        self.btn_send_linecmd = Button(frame_line, text="  Send  ", command=self.clickedSendLine,
+                                       font=("Arial", 8))
+        self.btn_send_linecmd.grid(column=6, row=1, sticky=W+ N + S + E)
+
+
+    def clickedCompLine(self, scaramotor):
+        pos1 = [float(self.ent_x1.get()), float(self.ent_y1.get())]
+        pos2 = [float(self.ent_x2.get()), float(self.ent_y2.get())]
+        speed = float(self.ent_speed.get())
+        self.line_solution = scaramotor.line_compute_times(pos1, pos2, speed)
+        print(self.line_solution)
+
+    def clickedSendLine(self):
+        steps = [int(self.line_solution[2][0]), int(self.line_solution[2][1])]
+        direc = [self.line_solution[3][0], self.line_solution[4][0]]
+        turn_values = [self.line_solution[3][1], self.line_solution[4][1]]
+
+        serial1.send_start_byte_line()
+        #16 bytes
+        serial1.send_floats_serial(self.line_solution[0])
+        #16 bytes
+        serial1.send_floats_serial(self.line_solution[1])
+        #5 bytes
+        serial1.serial_send_steps_dir(steps, direc)
+        #4 bytes
+        serial1.serial_send_two_int(turn_values)
+
+
 
 
 

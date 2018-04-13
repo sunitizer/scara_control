@@ -80,12 +80,12 @@ class ScaraMotors:
                 direction.append([self.motor_dir(angles[0], angles[maxmin_index]), maxmin_index])
             else:
                 step_arrays.append(self.angle_to_steps(angles, res))
-                direction.append([self.motor_dir(angles[0], angles[-1]), None])
+                direction.append([self.motor_dir(angles[0], angles[-1]), 0])
 
         # fits polynomial to the graphs
         quad_coef = [np.polyfit(step_arrays[0], time_array, 3), np.polyfit(step_arrays[1], time_array, 3)]
-        self.plot_fit(step_arrays[0], time_array, quad_coef[0])
-        self.plot_fit(step_arrays[1], time_array, quad_coef[1])
+        #self.plot_fit(step_arrays[0], time_array, quad_coef[0])
+        #self.plot_fit(step_arrays[1], time_array, quad_coef[1])
 
         num_steps = [round(arr[-1]) for arr in step_arrays]
 
