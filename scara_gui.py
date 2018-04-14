@@ -103,7 +103,7 @@ class SerialConnection:
     def serial_send_two_int(self, array):
         int1_msb, int1_lsb = self.convert_to_bytes(array[0])
         int2_msb, int2_lsb = self.convert_to_bytes(array[1])
-        print(int1_msb, int1_lsb, int2_msb, int2_lsb)
+
         # send 4 bytes to ardiuno:  int1_msb, int1_lsb, int2_msb, int2_lsb
         self.arduinosrl.write(int1_msb)
         self.arduinosrl.write(int1_lsb)

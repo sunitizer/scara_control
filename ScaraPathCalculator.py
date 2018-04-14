@@ -8,8 +8,8 @@ import struct
 def main():
     start_time = time.time()
     #testing
-    pos1 = [100, 0]
-    pos2 = [329.9, 0]
+    pos1 = [50, 50]
+    pos2 = [230, 230]
     speed = 30 #mm/s
     path_calculator = ScaraPathCalculator(arm_len1=179.9,
                                           arm_len2=150,
@@ -97,7 +97,7 @@ class ScaraPathCalculator(object):
 
         # fits polynomial to the graphs
         quad_coef = [np.polyfit(step_arrays[0], time_array, 3), np.polyfit(step_arrays[1], time_array, 3)]
-        self.plot_fit(time_array, step_arrays[0], quad_coef[0])
+        self.plot_fit(step_arrays[0], time_array, quad_coef[0])
         self.plot_fit(step_arrays[1], time_array, quad_coef[1])
 
         num_steps = [round(arr[-1]) for arr in step_arrays]
