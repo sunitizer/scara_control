@@ -7,6 +7,21 @@ import struct
 import ScaraMotors
 import numpy as np
 
+
+def main():
+    window = Tk()
+    window.title("SCARA GUI")
+    # window.geometry("350x250")
+    angle_in = [0, 0]
+    scaramotor1 = ScaraMotors.ScaraMotors(arm_len1=179.9, arm_len2=150, angle_res1=2 * math.pi / 200 / 3.70588235 / 8,
+                                          angle_res2=2 * math.pi / 400 / 2 / 8, angle_init=angle_in)
+    serial1 = SerialConnection(window)
+    pointtopoint = PointtoPoint(window, scaramotor1, serial1)
+    straight_line = LineInput(window, scaramotor1, serial1)
+    window.mainloop()
+
+
+
 class SerialConnection:
 
     def __init__(self, master):
@@ -88,7 +103,7 @@ class SerialConnection:
     def serial_send_two_int(self, array):
         int1_msb, int1_lsb = self.convert_to_bytes(array[0])
         int2_msb, int2_lsb = self.convert_to_bytes(array[1])
-
+        print(int1_msb, int1_lsb, int2_msb, int2_lsb)
         # send 4 bytes to ardiuno:  int1_msb, int1_lsb, int2_msb, int2_lsb
         self.arduinosrl.write(int1_msb)
         self.arduinosrl.write(int1_lsb)
@@ -150,7 +165,7 @@ class PointtoPoint:
         self.lbl_coordmes = Label(frame_coord, font=("Arial", 8), fg='red')
         self.lbl_coordmes.grid(column=0, row=2, columnspan=3, sticky=W)
 
-        frame_angle = Frame(window)
+        frame_angle = Frame(master)
         frame_angle.grid(column=1, row=1, sticky=N)
 
         self.lbl_angle_1 = Label(frame_angle, text="ANGLE 1 (deg): ", font=("Arial", 8))
@@ -165,7 +180,7 @@ class PointtoPoint:
         self.ent_angle_2 = Entry(frame_angle, width=10)
         self.ent_angle_2.grid(column=1, row=1)
 
-        self.btn_send_angle = Button(frame_angle, text="  Send  ", command=lambda: self.clickedSendAngle(scaramotor), font=("Arial", 8))
+        self.btn_send_angle = Button(frame_angle, text="  Send  ", command=lambda: self.clickedSendAngle(scaramotor, serial1), font=("Arial", 8))
         self.btn_send_angle.grid(column=2, row=0, rowspan=2, sticky=W+N+S)
 
     def clickedComputeA(self, scaramotor):
@@ -183,7 +198,7 @@ class PointtoPoint:
         else:
             self.lbl_coordmes.configure(text="This is not a float")
 
-    def clickedSendAngle(self, scaramotor):
+    def clickedSendAngle(self, scaramotor, serial1):
         current_angles = scaramotor.getAngle()
         try:
             gotoangle = [float(self.ent_angle_1.get()), float(self.ent_angle_2.get())]
@@ -251,7 +266,7 @@ class LineInput:
                                      font=("Arial", 8))
         self.btn_comp_line.grid(column=6, row=0, sticky=N+S+E)
 
-        self.btn_send_linecmd = Button(frame_line, text="  Send  ", command=self.clickedSendLine,
+        self.btn_send_linecmd = Button(frame_line, text="  Send  ", command=lambda: self.clickedSendLine(serial1, scaramotor),
                                        font=("Arial", 8))
         self.btn_send_linecmd.grid(column=6, row=1, sticky=W+ N + S + E)
 
@@ -263,34 +278,25 @@ class LineInput:
         self.line_solution = scaramotor.line_compute_times(pos1, pos2, speed)
         print(self.line_solution)
 
-    def clickedSendLine(self):
+    def clickedSendLine(self, serial1, scaramotor):
         steps = [int(self.line_solution[2][0]), int(self.line_solution[2][1])]
         direc = [self.line_solution[3][0][0], self.line_solution[3][1][0]]
         turn_values = [self.line_solution[3][0][1], self.line_solution[3][1][1]]
 
         serial1.send_start_byte_line()
         #16 bytes
-        serial1.send_floats_serial(self.line_solution[0])
+        serial1.send_floats_serial(self.line_solution[0]*1000000)
         #16 bytes
-        serial1.send_floats_serial(self.line_solution[1])
+        serial1.send_floats_serial(self.line_solution[1]*1000000)
         #5 bytes
         serial1.serial_send_steps_dir(steps, direc)
         #4 bytes
         serial1.serial_send_two_int(turn_values)
 
+        scaramotor.updateAngle(scaramotor.find_discrete_angle([float(self.ent_x2.get()), float(self.ent_y2.get())]))
 
 
+if __name__ == "__main__":
+    main()
 
-
-
-window = Tk()
-window.title("SCARA GUI")
-#window.geometry("350x250")
-angle_in = [0,0]
-scaramotor1 = ScaraMotors.ScaraMotors(arm_len1=179.9, arm_len2=150, angle_res1=2*math.pi/200/3.70588235/8,
-                          angle_res2=2*math.pi/400/2/8, angle_init=angle_in)
-serial1 = SerialConnection(window)
-pointtopoint = PointtoPoint(window, scaramotor1, serial1)
-straight_line = LineInput(window, scaramotor1, serial1)
-window.mainloop()
 
