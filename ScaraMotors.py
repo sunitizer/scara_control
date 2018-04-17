@@ -2,21 +2,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 import time
+from scipy.optimize import curve_fit
 
 
 def main():
     start_time = time.time()
     # testing
-    pos1 = [200, 200]
-    pos2 = [200, -200]
+    pos1 = [250, 200]
+    pos2 = [50, -175]
     angle_in = [0, 0]
     speed = 20  # mm/s
     path_calculator = ScaraMotors(arm_len1=179.9, arm_len2=150, angle_res1=2 * math.pi / 200 / 3.70588235 / 8,
                                           angle_res2=2 * math.pi / 400 / 2 / 8, angle_init=angle_in)
 
 
-    coef1 = path_calculator.line_compute_times(pos1, pos2, speed)
-    print(coef1)
+    coef2 = path_calculator.line_compute_times2(pos1, pos2, speed)
+    print(coef2)
     # print(struct.pack('ffff', coef1[0][i], for i in range(4)))
     # print("Time elapsed: {}".format(time.time()-start_time))
 
@@ -36,6 +37,93 @@ class ScaraMotors:
 
         # the current angles of the scara arm
         self.angle_cur = angle_init
+
+    def fit_curve_func(self, x, a, b):
+        return a*np.power(x,b)
+#a*np.power(x,3)+b*np.power(x,2)+c*np.power(x,1)+d
+    def line_compute_times2(self, pos_start, pos_end, speed, time_res=0.001):
+        """
+        Computes the parameters needed for running end effector in a straight line
+        pos_start and pos_end are starting and end positions, both are in the format of [x, y]
+        speed is mm/s linear speed
+        time_res is the time resolution in seconds
+        """
+        # find discretized positions of the SCARA arm
+        disc_angle_start = self.find_discrete_angle(pos_start)
+        disc_angle_end = self.find_discrete_angle(pos_end)
+
+        disc_pos_start = self.find_pos(disc_angle_start)
+        disc_pos_end = self.find_pos(disc_angle_end)
+
+        # slope m and y-intercept b computed
+        m = (disc_pos_end[1] - disc_pos_start[1]) / (disc_pos_end[0] - disc_pos_start[0])
+        b = disc_pos_start[1] - m * disc_pos_start[0]
+
+        # find time it takes to complete linear run with given speed
+        disc_dist = self.distance_two_points(disc_pos_start, disc_pos_end)
+        total_time = disc_dist / speed
+
+        # define time array of 0 to 1 in time_res increments
+        time_array = np.linspace(0, 1, 1 / time_res + 1)
+
+        # solve for angles array for both motors given time_array
+        # Index time_array backwards with [::-1] to achieve same thing as 1-time
+        x_t = time_array[::-1] * disc_pos_start[0] + time_array * disc_pos_end[0]
+        # Automatic vectorized calculation of y_t, since x_t is an np.ndarray
+        y_t = m * x_t + b
+        # Use numpy versions of trig functions so that everything is vectorized
+        theta2_t = np.arccos(
+            (x_t ** 2 + y_t ** 2 - self.ARM_LEN1 ** 2 - self.ARM_LEN2 ** 2) / (2 * self.ARM_LEN1 * self.ARM_LEN2))
+        theta1_t = (np.arctan2(y_t, x_t) + np.arctan2((self.ARM_LEN2 * np.sin(theta2_t)),
+                                                      (self.ARM_LEN1 + self.ARM_LEN2 * np.cos(theta2_t))))
+
+        # convert time to right time
+        time_array *= total_time
+
+        # Initialize 1D lists, can append lists each iteration through the loop if needed
+        step_arrays = []
+        direction = []
+        fit_values = []
+        num_steps = []
+        maxmin_ind = []
+        # Uses theta1_t, self.ANGLE_RES1 first time through loop
+        # Uses theta2_t, self.ANGLE_RES2 second time through loop
+        angles_arrays = [theta1_t, theta2_t]
+        resolution_array = [self.ANGLE_RES1, self.ANGLE_RES2]
+        for angles, res in zip(angles_arrays, resolution_array):
+            # will check if the motor will run in opposite direction, if so will adjust graph and find point of dir change
+            maxmin_index = self.check_for_max_min(angles)
+            if maxmin_index is not None:
+                turning_angle = angles[maxmin_index]
+                turning_step = int(round((turning_angle - angles[0]) / res))
+                total_steps = self.steps_to_go(angles[0], angles[-1], res)
+                split_step_arrays = [self.angle_to_steps(angles[:maxmin_index], res),
+                                     self.angle_to_steps(angles[maxmin_index:], res)]
+                popt1, pcov1 = curve_fit(self.fit_curve_func, split_step_arrays[0], time_array[:maxmin_index])
+                popt2, pcov2 = curve_fit(self.fit_curve_func, split_step_arrays[1], time_array[:1001-maxmin_index])
+                fit_values.append([popt1, popt2])
+                num_steps.append([total_steps, turning_step])
+                # Use hstack to concatenate numpy ndarrays, equivalent of adding lists
+                step_arrays.append([split_step_arrays[0], split_step_arrays[1]])
+                direction.append(self.motor_dir(angles[0], angles[maxmin_index]))
+                maxmin_ind.append(maxmin_index)
+            else:
+                total_steps = self.steps_to_go(angles[0], angles[-1], res)
+                popt1, pcov1 = curve_fit(self.fit_curve_func, self.angle_to_steps(angles, res), time_array)
+                fit_values.append([popt1, [0, 0]])
+                num_steps.append([total_steps, 0])
+                step_arrays.append([self.angle_to_steps(angles, res), []])
+                direction.append(self.motor_dir(angles[0], angles[-1]))
+                maxmin_ind.append(1001)
+
+
+        plt.plot(step_arrays[0][0], self.fit_curve_func(step_arrays[0][0], *fit_values[0][0]), 'r-', step_arrays[0][0], time_array[:maxmin_ind[0]], 'b-')
+        #plt.plot(step_arrays[0][1], self.fit_curve_func(step_arrays[0][1], *fit_values[0][1]), 'r-', step_arrays[0][1], time_array[:1001-maxmin_ind[0]], 'b-')
+        #plt.plot(step_arrays[1][0], self.fit_curve_func(step_arrays[1][0], *fit_values[1][0]), 'r-', step_arrays[1][0], time_array[:maxmin_ind[1]], 'b-')
+        #plt.plot(step_arrays[1][1], self.fit_curve_func(step_arrays[1][1], *fit_values[1][1]), 'r-', step_arrays[1][1], time_array[:1001-maxmin_ind[1]], 'b-')
+        plt.show()
+
+        return [fit_values[0], fit_values[1], num_steps, direction]
 
     def line_compute_times(self, pos_start, pos_end, speed, time_res=0.001):
         """
@@ -102,8 +190,8 @@ class ScaraMotors:
 
         # fits polynomial to the graphs
         quad_coef = [np.polyfit(step_arrays[0], time_array, 3), np.polyfit(step_arrays[1], time_array, 3)]
-        #self.plot_fit(step_arrays[0], time_array, quad_coef[0])
-        #self.plot_fit(step_arrays[1], time_array, quad_coef[1])
+        self.plot_fit(step_arrays[0], time_array, quad_coef[0])
+        self.plot_fit(step_arrays[1], time_array, quad_coef[1])
 
         num_steps = [round(arr[-1]) for arr in step_arrays]
 
@@ -201,7 +289,6 @@ class ScaraMotors:
             return steps*reso
         else:
             return -steps*reso
-
 
 if __name__ == "__main__":
     main()
