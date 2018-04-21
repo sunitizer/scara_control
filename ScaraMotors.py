@@ -8,15 +8,15 @@ from scipy.optimize import curve_fit
 def main():
     start_time = time.time()
     # testing
-    pos1 = [250, 200]
-    pos2 = [50, -175]
+    pos1 = [200, 200]
+    pos2 = [50, 50]
     angle_in = [0, 0]
     speed = 20  # mm/s
     path_calculator = ScaraMotors(arm_len1=179.9, arm_len2=150, angle_res1=2 * math.pi / 200 / 3.70588235 / 8,
                                           angle_res2=2 * math.pi / 400 / 2 / 8, angle_init=angle_in)
 
 
-    coef2 = path_calculator.line_compute_times2(pos1, pos2, speed)
+    coef2 = path_calculator.line_compute_times(pos1, pos2, speed)
     print(coef2)
     # print(struct.pack('ffff', coef1[0][i], for i in range(4)))
     # print("Time elapsed: {}".format(time.time()-start_time))
@@ -38,9 +38,15 @@ class ScaraMotors:
         # the current angles of the scara arm
         self.angle_cur = angle_init
 
-    def fit_curve_func(self, x, a, b):
+    def fit_curve_func_2nd(self, x, a, b):
         return a*np.power(x,b)
-#a*np.power(x,3)+b*np.power(x,2)+c*np.power(x,1)+d
+
+    def fit_curve_func_1st(self, x, a, b):
+        return a*np.power(x,10)+b*np.power(x,1)
+
+    def fit_curve_func_nosplit(self, x, a, b, c, d):
+        return a*np.power(x, 3) + b*np.power(x, 2) + c*np.power(x, 1) + d
+
     def line_compute_times2(self, pos_start, pos_end, speed, time_res=0.001):
         """
         Computes the parameters needed for running end effector in a straight line
@@ -96,11 +102,11 @@ class ScaraMotors:
             if maxmin_index is not None:
                 turning_angle = angles[maxmin_index]
                 turning_step = int(round((turning_angle - angles[0]) / res))
-                total_steps = self.steps_to_go(angles[0], angles[-1], res)
+                total_steps = self.steps_to_go(angles[0], angles[maxmin_index], res)+self.steps_to_go(angles[maxmin_index], angles[-1], res)
                 split_step_arrays = [self.angle_to_steps(angles[:maxmin_index], res),
                                      self.angle_to_steps(angles[maxmin_index:], res)]
-                popt1, pcov1 = curve_fit(self.fit_curve_func, split_step_arrays[0], time_array[:maxmin_index])
-                popt2, pcov2 = curve_fit(self.fit_curve_func, split_step_arrays[1], time_array[:1001-maxmin_index])
+                popt1, pcov1 = curve_fit(self.fit_curve_func_1st, split_step_arrays[0], time_array[:maxmin_index])
+                popt2, pcov2 = curve_fit(self.fit_curve_func_2nd, split_step_arrays[1], time_array[:1001-maxmin_index])
                 fit_values.append([popt1, popt2])
                 num_steps.append([total_steps, turning_step])
                 # Use hstack to concatenate numpy ndarrays, equivalent of adding lists
@@ -109,7 +115,7 @@ class ScaraMotors:
                 maxmin_ind.append(maxmin_index)
             else:
                 total_steps = self.steps_to_go(angles[0], angles[-1], res)
-                popt1, pcov1 = curve_fit(self.fit_curve_func, self.angle_to_steps(angles, res), time_array)
+                popt1, pcov1 = curve_fit(self.fit_curve_func_nosplit, self.angle_to_steps(angles, res), time_array)
                 fit_values.append([popt1, [0, 0]])
                 num_steps.append([total_steps, 0])
                 step_arrays.append([self.angle_to_steps(angles, res), []])
@@ -117,11 +123,14 @@ class ScaraMotors:
                 maxmin_ind.append(1001)
 
 
-        plt.plot(step_arrays[0][0], self.fit_curve_func(step_arrays[0][0], *fit_values[0][0]), 'r-', step_arrays[0][0], time_array[:maxmin_ind[0]], 'b-')
-        #plt.plot(step_arrays[0][1], self.fit_curve_func(step_arrays[0][1], *fit_values[0][1]), 'r-', step_arrays[0][1], time_array[:1001-maxmin_ind[0]], 'b-')
-        #plt.plot(step_arrays[1][0], self.fit_curve_func(step_arrays[1][0], *fit_values[1][0]), 'r-', step_arrays[1][0], time_array[:maxmin_ind[1]], 'b-')
-        #plt.plot(step_arrays[1][1], self.fit_curve_func(step_arrays[1][1], *fit_values[1][1]), 'r-', step_arrays[1][1], time_array[:1001-maxmin_ind[1]], 'b-')
-        plt.show()
+        #plt.plot(step_arrays[0][0], self.fit_curve_func_1st(step_arrays[0][0], *fit_values[0][0]), 'r-', step_arrays[0][0], time_array[:maxmin_ind[0]], 'b-')
+        #plt.plot(step_arrays[0][1], self.fit_curve_func_2nd(step_arrays[0][1], *fit_values[0][1]), 'r-', step_arrays[0][1], time_array[:1001-maxmin_ind[0]], 'b-')
+        #plt.plot(step_arrays[1][0], self.fit_curve_func_1st(step_arrays[1][0], *fit_values[1][0]), 'r-', step_arrays[1][0], time_array[:maxmin_ind[1]], 'b-')
+        #plt.plot(step_arrays[1][1], self.fit_curve_func_2nd(step_arrays[1][1], *fit_values[1][1]), 'r-', step_arrays[1][1], time_array[:1001-maxmin_ind[1]], 'b-')
+
+        #plt.plot(step_arrays[0][0], self.fit_curve_func_nosplit(step_arrays[0][0], *fit_values[0][0]), 'r-', step_arrays[0][0], time_array[:maxmin_ind[0]], 'b-')
+        #plt.plot(step_arrays[1][0], self.fit_curve_func_nosplit(step_arrays[1][0], *fit_values[1][0]), 'r-', step_arrays[1][0], time_array[:maxmin_ind[1]], 'b-')
+        #plt.show()
 
         return [fit_values[0], fit_values[1], num_steps, direction]
 
@@ -183,7 +192,7 @@ class ScaraMotors:
 
                 # Use hstack to concatenate numpy ndarrays, equivalent of adding lists
                 step_arrays.append(np.hstack([split_step_arrays[0], split_step_arrays[1]]))
-                direction.append([self.motor_dir(angles[0], angles[maxmin_index]), maxmin_index])
+                direction.append([self.motor_dir(angles[0], angles[maxmin_index]), int(round(turning_step))])
             else:
                 step_arrays.append(self.angle_to_steps(angles, res))
                 direction.append([self.motor_dir(angles[0], angles[-1]), 0])
