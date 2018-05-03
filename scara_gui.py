@@ -12,7 +12,7 @@ def main():
     window = Tk()
     window.title("SCARA GUI")
     # window.geometry("350x250")
-    angle_in = [0, 0]
+    angle_in = [0.0, 0.0]
     scaramotor1 = ScaraMotors.ScaraMotors(arm_len1=179.9, arm_len2=150, angle_res1=2 * math.pi / 200 / 3.70588235 / 8,
                                           angle_res2=2 * math.pi / 400 / 2 / 8, angle_init=angle_in)
     serial1 = SerialConnection(window)
@@ -272,7 +272,7 @@ class LineInput:
 
 
     def clickedCompLine(self, scaramotor):
-        pos1 = scaramotor.getAngle()
+        pos1 = scaramotor.find_pos(scaramotor.getAngle())
         pos2 = [float(self.ent_x2.get()), float(self.ent_y2.get())]
         speed = float(self.ent_speed.get())
         self.line_solution = scaramotor.line_compute_times(pos1, pos2, speed)

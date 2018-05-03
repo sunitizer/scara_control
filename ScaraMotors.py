@@ -10,7 +10,7 @@ def main():
     # testing
     pos1 = [200, 200]
     pos2 = [50, 50]
-    angle_in = [0, 0]
+    angle_in = [329.9, 0]
     speed = 20  # mm/s
     path_calculator = ScaraMotors(arm_len1=179.9, arm_len2=150, angle_res1=2 * math.pi / 200 / 3.70588235 / 8,
                                           angle_res2=2 * math.pi / 400 / 2 / 8, angle_init=angle_in)
