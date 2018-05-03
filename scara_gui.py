@@ -232,17 +232,17 @@ class LineInput:
         frame_line = Frame(master)
         frame_line.grid(column=0, row=2, columnspan=2)
 
-        self.lbl_x1 = Label(frame_line, text="X1 (mm): ", font=("Arial", 8))
-        self.lbl_x1.grid(column=0, row=0, sticky=W)
+        #self.lbl_x1 = Label(frame_line, text="X1 (mm): ", font=("Arial", 8))
+        #self.lbl_x1.grid(column=0, row=0, sticky=W)
 
-        self.ent_x1 = Entry(frame_line, width=5)
-        self.ent_x1.grid(column=1, row=0, sticky=W)
+        #self.ent_x1 = Entry(frame_line, width=5)
+        #self.ent_x1.grid(column=1, row=0, sticky=W)
 
-        self.lbl_y1 = Label(frame_line, text="Y1 (mm): ", font=("Arial", 8))
-        self.lbl_y1.grid(column=0, row=1, sticky=W)
+        #self.lbl_y1 = Label(frame_line, text="Y1 (mm): ", font=("Arial", 8))
+        #self.lbl_y1.grid(column=0, row=1, sticky=W)
 
-        self.ent_y1 = Entry(frame_line, width=5)
-        self.ent_y1.grid(column=1, row=1, sticky=W)
+        #self.ent_y1 = Entry(frame_line, width=5)
+        #self.ent_y1.grid(column=1, row=1, sticky=W)
 
         self.lbl_x2 = Label(frame_line, text="X2 (mm): ", font=("Arial", 8))
         self.lbl_x2.grid(column=2, row=0)
@@ -272,7 +272,7 @@ class LineInput:
 
 
     def clickedCompLine(self, scaramotor):
-        pos1 = [float(self.ent_x1.get()), float(self.ent_y1.get())]
+        pos1 = scaramotor.getAngle()
         pos2 = [float(self.ent_x2.get()), float(self.ent_y2.get())]
         speed = float(self.ent_speed.get())
         self.line_solution = scaramotor.line_compute_times(pos1, pos2, speed)
