@@ -232,14 +232,14 @@ class LineInput:
         frame_line = Frame(master)
         frame_line.grid(column=0, row=2, columnspan=2)
 
-        #self.lbl_x1 = Label(frame_line, text="X1 (mm): ", font=("Arial", 8))
-        #self.lbl_x1.grid(column=0, row=0, sticky=W)
+        self.lbl_x1 = Label(frame_line, text="X1 (mm): " + str(scaramotor.find_pos(scaramotor.getAngle())[0]), font=("Arial", 8))
+        self.lbl_x1.grid(column=0, row=0, sticky=W)
 
         #self.ent_x1 = Entry(frame_line, width=5)
         #self.ent_x1.grid(column=1, row=0, sticky=W)
 
-        #self.lbl_y1 = Label(frame_line, text="Y1 (mm): ", font=("Arial", 8))
-        #self.lbl_y1.grid(column=0, row=1, sticky=W)
+        self.lbl_y1 = Label(frame_line, text="Y1 (mm): " + str(scaramotor.find_pos(scaramotor.getAngle())[1]), font=("Arial", 8))
+        self.lbl_y1.grid(column=0, row=1, sticky=W)
 
         #self.ent_y1 = Entry(frame_line, width=5)
         #self.ent_y1.grid(column=1, row=1, sticky=W)
@@ -277,8 +277,10 @@ class LineInput:
         speed = float(self.ent_speed.get())
         self.line_solution = scaramotor.line_compute_times(pos1, pos2, speed)
         print(self.line_solution)
+        print(self.line_solution[3][0][1])
 
     def clickedSendLine(self, serial1, scaramotor):
+        current_angles = scaramotor.getAngle()
         steps = [int(self.line_solution[2][0]), int(self.line_solution[2][1])]
         direc = [self.line_solution[3][0][0], self.line_solution[3][1][0]]
         turn_values = [self.line_solution[3][0][1], self.line_solution[3][1][1]]
@@ -293,7 +295,13 @@ class LineInput:
         #4 bytes
         serial1.serial_send_two_int(turn_values)
 
-        scaramotor.updateAngle(scaramotor.find_discrete_angle([float(self.ent_x2.get()), float(self.ent_y2.get())]))
+        scaramotor.updateAngle([current_angles[0] + scaramotor.steps_to_angle(steps[0]-2.0*turn_values[0], direc[0], scaramotor.getReso()[0]),
+                 current_angles[1] + scaramotor.steps_to_angle(steps[1]-2.0*turn_values[1], direc[1], scaramotor.getReso()[1])])
+
+        self.lbl_x1.configure(text = "X1 (mm): " + str(scaramotor.find_pos(scaramotor.getAngle())[0]))
+        self.lbl_y1.configure(text = "Y1 (mm): " + str(scaramotor.find_pos(scaramotor.getAngle())[1]))
+
+            #scaramotor.find_discrete_angle([float(self.ent_x2.get()), float(self.ent_y2.get())]))
 
 
 if __name__ == "__main__":
